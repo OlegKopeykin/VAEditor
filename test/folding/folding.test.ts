@@ -2,7 +2,7 @@ import { VanessaGherkinProvider } from '../../src/languages/turbo-gherkin/provid
 import { language } from '../../src/languages/turbo-gherkin/configuration';
 import { initGherkinProvider } from '../provider'
 import { content } from './example.file.js'
-let expect = require('chai').expect;
+import { expect } from 'chai';
 
 describe('Сворачивание кода', function () {
   type FoldingRanges = Array<monaco.languages.FoldingRange>;

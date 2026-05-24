@@ -3,7 +3,7 @@ import { VanessaGherkinProvider } from '../../src/languages/turbo-gherkin/provid
 import { language } from '../../src/languages/turbo-gherkin/configuration';
 import { initGherkinProvider } from '../provider';
 import * as steplist from './steplist.json'
-let expect = require('chai').expect;
+import { expect } from 'chai';
 
 const elements = {
   ИмяКоманды: 'ЗаписатьИЗакрыть',

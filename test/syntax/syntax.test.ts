@@ -3,7 +3,7 @@ import { language } from '../../src/languages/turbo-gherkin/configuration';
 import { initGherkinProvider } from '../provider';
 import * as content from './example.file.js'
 import { IVanessaModel } from '../../src/languages/turbo-gherkin/common';
-let expect = require('chai').expect;
+import { expect } from 'chai';
 let provider;
 
 class SyntaxChecker {

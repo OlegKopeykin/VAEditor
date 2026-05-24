@@ -3,7 +3,7 @@ import { language } from '../../src/languages/turbo-gherkin/configuration';
 import { initGherkinProvider } from '../provider';
 import { content } from './example.file.js'
 import * as vars from './example.json';
-let expect = require('chai').expect;
+import { expect } from 'chai';
 
 describe('Переменные и гиперссылки', function () {
   type ILinksList = monaco.languages.ILinksList;

@@ -1,7 +1,7 @@
 import { VanessaEditor } from '../../src/vanessa-editor';
 import { VanessaTabs } from '../../src/vanessa-tabs';
 import { content, subcode1 } from './example.file.js'
-let expect = require('chai').expect;
+import { expect } from 'chai';
 
 //@ts-ignore
 const tabs = window.VanessaTabs as VanessaTabs;

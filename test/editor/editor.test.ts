@@ -3,7 +3,7 @@ import { VanessaEditor } from '../../src/vanessa-editor';
 import { VanessaTabs } from '../../src/vanessa-tabs';
 import { initGherkinProvider } from '../provider'
 let emulator = require('./key-emulator');
-let expect = require('chai').expect;
+import { expect } from 'chai';
 
 //@ts-ignore
 const tabs = window.VanessaTabs as VanessaTabs;
