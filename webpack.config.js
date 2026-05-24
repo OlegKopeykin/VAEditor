@@ -1,4 +1,3 @@
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 const webpack = require('webpack')
@@ -13,13 +12,19 @@ module.exports = (env, argv) => {
   return {
     entry,
     resolve: {
-      extensions: ['.ts', '.js', '.css']
+      extensions: ['.ts', '.js', '.css'],
+      fallback: {
+        util: require.resolve('util/'),
+        stream: require.resolve('stream-browserify'),
+        buffer: require.resolve('buffer/')
+      }
     },
     output: {
       globalObject: 'self',
       filename: '[name].js',
       chunkFilename: 'app.worker.js',
-      path: path.resolve(__dirname, 'dist')
+      path: path.resolve(__dirname, 'dist'),
+      clean: true
     },
     resolveLoader: {
       alias: {
@@ -29,6 +34,12 @@ module.exports = (env, argv) => {
       }
     },
     module: {
+      parser: {
+        javascript: {
+          worker: false,
+          url: false
+        }
+      },
       rules: [
         {
           test: /node_modules[\\/]monaco-editor-nls[\\/].+\.js$/,
@@ -80,17 +91,21 @@ module.exports = (env, argv) => {
         },
         {
           test: /\.feature$/,
-          use: 'raw-loader'
+          type: 'asset/source'
         },
         {
           test: /\.txt$/,
-          use: 'raw-loader'
+          type: 'asset/source'
         }]
     },
     plugins: [
       new webpack.DefinePlugin({
         'process.env': JSON.stringify(process.env),
         'process.argv': JSON.stringify(argv)
+      }),
+      new webpack.ProvidePlugin({
+        Buffer: ['buffer', 'Buffer'],
+        process: 'process/browser'
       }),
       new webpack.NormalModuleReplacementPlugin(/\/(vscode-)?nls\.js$/, function (resource) {
         resource.request = nls
@@ -99,7 +114,6 @@ module.exports = (env, argv) => {
       new webpack.optimize.LimitChunkCountPlugin({
         maxChunks: 3
       }),
-      new CleanWebpackPlugin(),
       new HtmlWebpackPlugin({
         filename: 'index.html',
         title: 'VAEditor',
