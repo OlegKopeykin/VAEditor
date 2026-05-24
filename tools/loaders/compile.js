@@ -1,20 +1,22 @@
 // Origin https://github.com/peterschussheim/monaco-editor/blob/master/loaders/compile.js
 // MIT License Copyright (c) 2018 Peter Schussheim
+// Adapted for webpack 5: EntryPlugin, hooks.tap, deleteAsset, native getOptions
 
-const loaderUtils = require('loader-utils')
+const crypto = require('crypto')
 
 const WebWorkerTemplatePlugin = require('webpack/lib/webworker/WebWorkerTemplatePlugin')
 const ExternalsPlugin = require('webpack/lib/ExternalsPlugin')
 const NodeTargetPlugin = require('webpack/lib/node/NodeTargetPlugin')
-const LoaderTargetPlugin = require('webpack/lib/LoaderTargetPlugin')
-const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin')
+const EntryPlugin = require('webpack/lib/EntryPlugin')
 
 const COMPILATION_METADATA = Symbol('COMPILATION_METADATA')
 
 module.exports.COMPILATION_METADATA = COMPILATION_METADATA
 
 module.exports.pitch = function pitch (remainingRequest) {
-  const { target, plugins = [], output, emit } = loaderUtils.getOptions(this) || {}
+  const opts = this.getOptions() || {}
+  const { target, plugins = [], output } = opts
+  const emit = opts.emit === false || opts.emit === 'false' ? false : true
 
   if (target !== 'worker') {
     throw new Error(`Unsupported compile target: ${JSON.stringify(target)}`)
@@ -22,69 +24,69 @@ module.exports.pitch = function pitch (remainingRequest) {
 
   this.cacheable(false)
 
-  const { filename, options = {} } = getOutputFilename(output, { target })
+  const { filename } = getOutputFilename(output, { target, resourcePath: this.resourcePath })
 
   // eslint-disable-next-line no-underscore-dangle
   const currentCompilation = this._compilation
 
-  const outputFilename = loaderUtils.interpolateName(this, filename, {
-    context: options.context || currentCompilation.options.context,
-    regExp: options.regExp
-  })
-
   const outputOptions = {
-    filename: outputFilename,
-    chunkFilename: `${outputFilename}.[id]`,
-    namedChunkFilename: null
+    filename,
+    chunkFilename: `${filename}.[id]`,
+    publicPath: currentCompilation.outputOptions.publicPath
   }
 
   const compilerOptions = currentCompilation.compiler.options
   const childCompiler = currentCompilation.createChildCompiler('worker', outputOptions, [
-    // https://github.com/webpack/webpack/blob/master/lib/WebpackOptionsApply.js
-    new WebWorkerTemplatePlugin(outputOptions),
-    new LoaderTargetPlugin('webworker'),
+    new WebWorkerTemplatePlugin(),
     ...((this.target === 'web') || (this.target === 'webworker') ? [] : [new NodeTargetPlugin()]),
 
-    // https://github.com/webpack-contrib/worker-loader/issues/95#issuecomment-352856617
-    ...(compilerOptions.externals ? [new ExternalsPlugin(compilerOptions.externals)] : []),
+    ...(compilerOptions.externals ? [new ExternalsPlugin('var', compilerOptions.externals)] : []),
 
     ...plugins,
 
-    new SingleEntryPlugin(this.context, `!!${remainingRequest}`, 'main')
+    new EntryPlugin(this.context, `!!${remainingRequest}`, { name: 'main' })
   ])
 
-  const subCache = `subcache ${__dirname} ${remainingRequest}`
-
-  childCompiler.plugin('compilation', (compilation) => {
-    if (!compilation.cache) { return }
-    if (!(subCache in compilation.cache)) { Object.assign(compilation.cache, { [subCache]: {} }) }
-    Object.assign(compilation, { cache: compilation.cache[subCache] })
-  })
-
   const callback = this.async()
+  const beforeAssets = new Set(Object.keys(currentCompilation.assets))
+
+  if (!emit) {
+    childCompiler.outputFileSystem = {
+      mkdir (_p, cb) { cb() },
+      writeFile (_p, _c, cb) { cb() },
+      stat (_p, cb) { cb(new Error('ENOENT')) }
+    }
+  }
 
   childCompiler.runAsChild((error, entries, compilation) => {
     if (error) { return callback(error) }
-    if (entries.length === 0) { return callback(null, null) }
-    const mainFilename = entries[0].files[0]
-    if (emit === false) { delete currentCompilation.assets[mainFilename] }
-    callback(null, compilation.assets[mainFilename].source(), null, {
-      [COMPILATION_METADATA]: entries[0].files
+    if (!entries || entries.length === 0) { return callback(null, null) }
+    const firstEntry = entries[0]
+    const files = Array.from(firstEntry.files)
+    const mainFilename = files[0]
+    if (!mainFilename) { return callback(null, null) }
+    const asset = compilation.assets[mainFilename] || currentCompilation.assets[mainFilename]
+    const source = asset ? asset.source() : ''
+    if (!emit) {
+      const newAssets = Object.keys(currentCompilation.assets).filter((name) => !beforeAssets.has(name))
+      for (const name of newAssets) {
+        currentCompilation.deleteAsset(name)
+      }
+    }
+    callback(null, source, null, {
+      [COMPILATION_METADATA]: files
     })
   })
 }
 
-function getOutputFilename (options, { target }) {
-  if (!options) { return { filename: `[hash].${target}.js`, options: undefined } }
-  if (typeof options === 'string') { return { filename: options, options: undefined } }
+function getOutputFilename (options, { target, resourcePath }) {
+  if (!options) {
+    const hash = crypto.createHash('md5').update(resourcePath).digest('hex').substring(0, 20)
+    return { filename: `${hash}.${target}.js` }
+  }
+  if (typeof options === 'string') { return { filename: options } }
   if (typeof options === 'object') {
-    return {
-      filename: options.filename,
-      options: {
-        context: options.context,
-        regExp: options.regExp
-      }
-    }
+    return { filename: options.filename }
   }
   throw new Error(`Invalid compile output options: ${options}`)
 }
