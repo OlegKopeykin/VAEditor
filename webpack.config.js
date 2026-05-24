@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const TerserPlugin = require('terser-webpack-plugin')
 const path = require('path')
 const webpack = require('webpack')
 const nls = require.resolve('monaco-editor-nls')
@@ -56,7 +57,6 @@ module.exports = (env, argv) => {
           loader: 'replace-strings',
           options: {
             replacements: [
-              { search: 'let __insane_func;', replace: 'var __insane_func;' },
               { search: 'secondary: [2048 /* CtrlCmd */ | 39 /* KeyI */],', replace: 'secondary: null,' }
             ]
           }
@@ -119,7 +119,21 @@ module.exports = (env, argv) => {
       }),
     ],
     optimization: {
-      minimize: argv.mode === 'production'
+      minimize: argv.mode === 'production',
+      minimizer: [
+        new TerserPlugin({
+          terserOptions: {
+            // Встроенный WebKit в 1С не понимает ES2020: иначе terser генерирует
+            // `a ?? b` из `null==a?b:a` и раскавычивает ключ U+2118 (`℘:"wp"`).
+            // ecma 2015 + закавыченные ASCII-ключи = вывод как в webpack 4.
+            ecma: 2015,
+            format: {
+              quote_keys: true,
+              ascii_only: true
+            }
+          }
+        })
+      ]
     },
     devServer: {
       port: 4000,
