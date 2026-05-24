@@ -1,20 +1,11 @@
 const alter = require('postcss-alter-property-value')
 const autoprefixer = require('autoprefixer')
-const base64 = require('postcss-base64')
 
 module.exports = {
   plugins: [
     autoprefixer({
       overrideBrowserslist: ['safari >= 11', 'chrome >= 63', '> 1%'],
       extensions: ['.css']
-    }),
-    base64({
-      extensions: ['.svg']
-    }),
-    base64({
-      extensions: ['.ttf'],
-      excludeAtFontFace: false,
-      root: 'node_modules/@vscode/codicons/dist'
     }),
     alter({
       declarations: {

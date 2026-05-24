@@ -89,6 +89,10 @@ module.exports = (env, argv) => {
         {
           test: /\.txt$/,
           type: 'asset/source'
+        },
+        {
+          test: /\.(svg|ttf)$/,
+          type: 'asset/inline'
         }]
     },
     plugins: [
