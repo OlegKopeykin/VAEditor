@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { fixtures } from './_helpers'
 
 const steplist = require('./steplist/steplist.json')
 
@@ -14,7 +15,6 @@ const variables = {
   Получатель: 'Петров Василий',
   Номенклатура: 'Столешница'
 }
-const keywords = require('../example/Keywords/keywords.json')
 
 async function setupProvider(page: any) {
   await page.goto('/index.html')
@@ -26,7 +26,7 @@ async function setupProvider(page: any) {
     provider.setStepList(JSON.stringify(steplist), true)
     provider.setElements(JSON.stringify(elements), true)
     provider.setVariables(JSON.stringify(variables), true)
-  }, { keywords, steplist, elements, variables })
+  }, { keywords: fixtures.keywords, steplist, elements, variables })
 }
 
 async function suggestionsFor(page: any, content: string, columnOffset = 0) {
@@ -52,11 +52,17 @@ async function suggestionsFor(page: any, content: string, columnOffset = 0) {
 
 test.describe('Автоподстановка шагов при вводе', () => {
   test.beforeEach(async ({ page }) => {
+    // Arrange + Act (shared)
     await setupProvider(page)
   })
 
   test('Подсказка для пустой строки', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const result = await suggestionsFor(page, '\t\t')
+
+    // Assert
     expect(result.suggestions).toHaveLength(10)
     result.suggestions.sort((a: any, b: any) => a.kind - b.kind)
     const step = result.suggestions[0]
@@ -69,7 +75,12 @@ test.describe('Автоподстановка шагов при вводе', () 
   })
 
   test('Подсказка для строки с ключевым словом', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const result = await suggestionsFor(page, '\t\tИ это значит что')
+
+    // Assert
     expect(result.suggestions).toHaveLength(6)
     result.suggestions.sort((a: any, b: any) => a.kind - b.kind)
     const step = result.suggestions[0]
@@ -82,7 +93,12 @@ test.describe('Автоподстановка шагов при вводе', () 
   })
 
   test('Подсказка с ключевым словом и пробелом', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const result = await suggestionsFor(page, '\t\tИ это значит что ')
+
+    // Assert
     expect(result.suggestions).toHaveLength(6)
     result.suggestions.sort((a: any, b: any) => a.kind - b.kind)
     const step = result.suggestions[0]
@@ -95,7 +111,12 @@ test.describe('Автоподстановка шагов при вводе', () 
   })
 
   test('Подсказка для строки с началом шага', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const result = await suggestionsFor(page, '\t\tИ это значит что список')
+
+    // Assert
     expect(result.suggestions).toHaveLength(6)
     result.suggestions.sort((a: any, b: any) => a.kind - b.kind)
     const step = result.suggestions[0]
@@ -108,7 +129,12 @@ test.describe('Автоподстановка шагов при вводе', () 
   })
 
   test('Подсказка с заменой элементов формы', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const result = await suggestionsFor(page, '\t\tИ список')
+
+    // Assert
     expect(result.suggestions).toHaveLength(6)
     result.suggestions.sort((a: any, b: any) => a.kind - b.kind)
     const step = result.suggestions[1]
@@ -118,7 +144,12 @@ test.describe('Автоподстановка шагов при вводе', () 
   })
 
   test('Подстановка шага с таблицей', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const result = await suggestionsFor(page, '\t\tИ список')
+
+    // Assert
     expect(result.suggestions).toHaveLength(6)
     result.suggestions.sort((a: any, b: any) => a.kind - b.kind)
     const step = result.suggestions[5]
@@ -128,7 +159,12 @@ test.describe('Автоподстановка шагов при вводе', () 
   })
 
   test('Подстановка переменных', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const result = await suggestionsFor(page, '\t\tИ поле <Контрагент>', 3)
+
+    // Assert
     expect(result.suggestions).toHaveLength(3)
     result.suggestions.sort((a: any, b: any) =>
       a.label < b.label ? -1 : a.label > b.label ? 1 : 0

@@ -2,17 +2,25 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Язык BSL (1С:Предприятие)', () => {
   test('BSL зарегистрирован в monaco', async ({ page }) => {
+    // Arrange
     await page.goto('/index.html')
     await page.waitForFunction(() => (window as any).monaco !== undefined)
+
+    // Act
     const languages = await page.evaluate(() =>
       (window as any).monaco.languages.getLanguages().map((l: any) => l.id)
     )
+
+    // Assert
     expect(languages).toContain('bsl')
   })
 
   test('Модель BSL создаётся с указанным языком', async ({ page }) => {
+    // Arrange
     await page.goto('/index.html')
     await page.waitForFunction(() => (window as any).monaco !== undefined)
+
+    // Act
     const result = await page.evaluate(() => {
       const m = (window as any).monaco
       const source = 'Процедура Тест()\n\tСообщить("Привет");\nКонецПроцедуры'
@@ -23,14 +31,19 @@ test.describe('Язык BSL (1С:Предприятие)', () => {
         firstLine: model.getLineContent(1)
       }
     })
+
+    // Assert
     expect(result.languageId).toBe('bsl')
     expect(result.lineCount).toBe(3)
     expect(result.firstLine).toBe('Процедура Тест()')
   })
 
   test('monaco.editor.tokenize работает на BSL-модели (без проверки highlighting — он не настроен)', async ({ page }) => {
+    // Arrange
     await page.goto('/index.html')
     await page.waitForFunction(() => (window as any).monaco !== undefined)
+
+    // Act
     const result = await page.evaluate(() => {
       const m = (window as any).monaco
       const source = 'Процедура Тест()\n\tСообщить("Привет");\nКонецПроцедуры'
@@ -41,6 +54,8 @@ test.describe('Язык BSL (1С:Предприятие)', () => {
         eachLineHasTokens: lines.every((l: any) => Array.isArray(l) && l.length > 0)
       }
     })
+
+    // Assert
     // BSL зарегистрирован, но monarch-tokenizer не настроен — tokenize отдаёт по 1 default-токену на строку
     // Здесь мы только убеждаемся что вызов работает и каждая строка имеет хотя бы 1 токен
     expect(result.lineCount).toBe(3)

@@ -1,7 +1,5 @@
 import { test, expect, Page } from '@playwright/test'
-
-const keywords = require('../example/Keywords/keywords.json')
-const steplist = require('../example/StepList/ru.json')
+import { fixtures, TIMEOUTS } from './_helpers'
 
 const originalText = 'Первая строка\nВторая строка\nТретья строка'
 const modifiedText = 'Первая строка\nИзменённая строка\nТретья строка\nДобавленная строка'
@@ -16,13 +14,16 @@ async function setupDiff(page: Page, original = originalText, modified = modifie
     provider.setKeywords(JSON.stringify(keywords))
     provider.setStepList(JSON.stringify(steplist))
     w.__diff__ = w.createVanessaDiffEditor(original, modified, lang)
-  }, { keywords, steplist, original, modified, lang })
-  await page.waitForTimeout(200)
+  }, { keywords: fixtures.keywords, steplist: fixtures.defaultSteplist, original, modified, lang })
+  await page.waitForTimeout(TIMEOUTS.EDITOR_READY * 2)
 }
 
 test.describe('Diff редактор', () => {
   test('Создание diff-редактора и базовая модель', async ({ page }) => {
+    // Arrange
     await setupDiff(page)
+
+    // Act
     const info = await page.evaluate(() => {
       const e = (window as any).__diff__
       return {
@@ -31,15 +32,20 @@ test.describe('Diff редактор', () => {
         modelValue: e.getModel().getValue()
       }
     })
+
+    // Assert
     expect(info.type).toBe(1)
     expect(info.hasDomNode).toBe(true)
     expect(info.modelValue).toBe(modifiedText)
   })
 
   test('setValue заменяет оба варианта (original + modified)', async ({ page }) => {
+    // Arrange
     await setupDiff(page)
     const newOriginal = 'Новый старый текст'
     const newModified = 'Новый изменённый текст'
+
+    // Act
     const values = await page.evaluate(({ newOriginal, newModified }) => {
       const e = (window as any).__diff__
       e.setValue(newOriginal, 'old.txt', newModified, 'new.txt')
@@ -50,12 +56,17 @@ test.describe('Diff редактор', () => {
         original: originalEditor.getModel().getValue()
       }
     }, { newOriginal, newModified })
+
+    // Assert
     expect(values.original).toBe(newOriginal)
     expect(values.modified).toBe(newModified)
   })
 
   test('setReadOnly применяется к опциям модифицированного редактора', async ({ page }) => {
+    // Arrange
     await setupDiff(page)
+
+    // Act
     const result = await page.evaluate(() => {
       const e = (window as any).__diff__
       const me = e.editor.getModifiedEditor()
@@ -66,6 +77,8 @@ test.describe('Diff редактор', () => {
       e.setReadOnly(false)
       return { rawSet: typeof e.setReadOnly === 'function' }
     })
+
+    // Assert
     expect(result.rawSet).toBe(true)
     // Дополнительно: после setReadOnly(true) попытка trigger 'type' не меняет модифицированную часть
     const after = await page.evaluate(({ originalText }) => {
@@ -78,11 +91,15 @@ test.describe('Diff редактор', () => {
       const after = me.getModel().getValue()
       return { before, after }
     }, { originalText })
+
     expect(after.after).toBe(after.before)
   })
 
   test('setSideBySide переключает renderSideBySide опцию', async ({ page }) => {
+    // Arrange
     await setupDiff(page)
+
+    // Act
     const states = await page.evaluate(() => {
       const e = (window as any).__diff__
       // Monaco IDiffEditorOptions.renderSideBySide отражается в DOM-классе .side-by-side
@@ -93,13 +110,18 @@ test.describe('Diff редактор', () => {
       const sideBySide = dom.classList.contains('side-by-side')
       return { inline, sideBySide }
     })
+
+    // Assert
     expect(states.inline).toBe(true)
     expect(states.sideBySide).toBe(true)
   })
 
   test('navigate next перемещает позицию модифицированного редактора', async ({ page }) => {
+    // Arrange
     await setupDiff(page)
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(TIMEOUTS.DIFF_NAVIGATOR)
+
+    // Act
     const result = await page.evaluate(() => {
       const e = (window as any).__diff__
       const me = e.editor.getModifiedEditor()
@@ -113,13 +135,18 @@ test.describe('Diff редактор', () => {
       const back = me.getPosition()?.lineNumber
       return { canNavigate, before, after1, after2, back }
     })
+
+    // Assert
     expect(result.canNavigate).toBe(true)
     // Позиция должна меняться при навигации
     expect(result.after1).not.toBe(result.before)
   })
 
   test('setTheme меняет тему monaco', async ({ page }) => {
+    // Arrange
     await setupDiff(page)
+
+    // Act
     const result = await page.evaluate(() => {
       const e = (window as any).__diff__
       const dom = e.domNode()
@@ -131,15 +158,21 @@ test.describe('Diff редактор', () => {
       const lightClass = themeEl ? themeEl.classList.contains('vs') : false
       return { darkClass, lightClass }
     })
+
+    // Assert
     expect(result.darkClass).toBe(true)
     expect(result.lightClass).toBe(true)
   })
 
   test('dispose очищает standaloneInstance', async ({ page }) => {
+    // Arrange
     await setupDiff(page)
     const before = await page.evaluate(() => !!(window as any).__diff__.domNode())
+
+    // Assert #1 — diff существует
     expect(before).toBe(true)
-    // После disposeVanessaDiffEditor — повторный createVanessaDiffEditor создаёт НОВЫЙ instance
+
+    // Act
     const result = await page.evaluate(() => {
       const w = window as any
       const oldDiff = w.__diff__
@@ -147,6 +180,8 @@ test.describe('Diff редактор', () => {
       const newDiff = w.createVanessaDiffEditor('a', 'b', 'turbo-gherkin')
       return { sameInstance: oldDiff === newDiff }
     })
+
+    // Assert #2 — создан новый instance
     expect(result.sameInstance).toBe(false)
   })
 })

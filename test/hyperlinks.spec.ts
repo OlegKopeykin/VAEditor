@@ -1,10 +1,9 @@
 import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
+import { fixtures } from './_helpers'
 
 const content = fs.readFileSync(path.join(__dirname, 'hyperlinks/example.feature'), 'utf-8')
-const keywords = require('../example/Keywords/keywords.json')
-const steplist = require('../example/StepList/ru.json')
 const vars = require('./hyperlinks/example.json')
 
 test.describe('Переменные и гиперссылки', () => {
@@ -12,10 +11,12 @@ test.describe('Переменные и гиперссылки', () => {
   let withImports: { links: any[] }
 
   test.beforeAll(async ({ browser }) => {
+    // Arrange (shared)
     const page = await browser.newPage()
     await page.goto('/index.html')
     await page.waitForFunction(() => (window as any).VanessaGherkinProvider !== undefined)
 
+    // Act (shared)
     const results = await page.evaluate(async ({ content, keywords, steplist, vars }) => {
       const w = window as any
       const provider = w.VanessaGherkinProvider
@@ -33,7 +34,7 @@ test.describe('Переменные и гиперссылки', () => {
         links: r.links.map((l: any) => ({ url: l.url, tooltip: l.tooltip }))
       })
       return { initial: ser(first), withImports: ser(second) }
-    }, { content, keywords, steplist, vars })
+    }, { content, keywords: fixtures.keywords, steplist: fixtures.defaultSteplist, vars })
 
     initial = results.initial
     withImports = results.withImports
@@ -41,12 +42,14 @@ test.describe('Переменные и гиперссылки', () => {
   })
 
   test('Навигационные ссылки', () => {
+    // Assert
     expect(initial.links).toHaveLength(13)
     expect(initial.links[0].url).toBe('e1cib/list/Справочник.Номенклатура')
     expect(initial.links[8].url).toBe('e1cib/app/Отчет.КомпоновкаТест')
   })
 
   test('Простые переменные', () => {
+    // Assert
     expect(initial.links[3].tooltip).toContain('ЗаписатьJSON')
     expect(initial.links[3].url).toBe('link:ТекстМодуля')
     expect(initial.links[4].tooltip).toBe('"Привет, Ванесса!"')
@@ -55,6 +58,7 @@ test.describe('Переменные и гиперссылки', () => {
   })
 
   test('Составные переменные', () => {
+    // Assert
     expect(initial.links[6].tooltip).toBe('Табуретка')
     expect(initial.links[6].url).toBe('link:Номенклатура.Товар')
     expect(initial.links[7].tooltip).toBe('e1cib/app/Отчет.КомпоновкаТест')
@@ -68,6 +72,7 @@ test.describe('Переменные и гиперссылки', () => {
   })
 
   test('Импорт файлов', () => {
+    // Assert
     expect(withImports.links[13].tooltip).toBe('Василёк')
     expect(withImports.links[13].url).toBe('link:Контрагенты.Продавец')
     expect(withImports.links[14].tooltip).toBe('Василёк')

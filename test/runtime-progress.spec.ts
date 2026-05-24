@@ -1,40 +1,34 @@
-import { test, expect, Page } from '@playwright/test'
-
-const keywords = require('../example/Keywords/keywords.json')
-const steplist = require('../example/StepList/ru.json')
+import { test, expect } from '@playwright/test'
+import { setupEditorPage } from './_helpers'
 
 const content = 'Шаг первый\nШаг второй\nШаг третий\nШаг четвёртый\nШаг пятый'
 const url = 'progress.feature'
 const title = 'Прогресс выполнения'
 
-async function setup(page: Page) {
-  await page.goto('/index.html')
-  await page.waitForFunction(() => (window as any).createVanessaTabs !== undefined)
-  await page.evaluate(({ keywords, steplist, content, url, title }) => {
-    const w = window as any
-    const provider = w.VanessaGherkinProvider
-    provider.setKeypairs(JSON.stringify({ if: ['then'], Если: ['Тогда'] }))
-    provider.setKeywords(JSON.stringify(keywords))
-    provider.setStepList(JSON.stringify(steplist))
-    w.createVanessaTabs()
-    w.__editor__ = w.VanessaTabs.edit(content, url, url, title, 0, false, true)
-  }, { keywords, steplist, content, url, title })
-  await page.waitForTimeout(100)
-}
-
 test.describe('Runtime progress API', () => {
-  test.beforeEach(async ({ page }) => await setup(page))
+  test.beforeEach(async ({ page }) => {
+    // Arrange + Act (shared)
+    await setupEditorPage(page, content, url, title)
+  })
 
   test('setCurrentProgress + getCurrentProgress round-trip', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует editor
+
+    // Act
     const result = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setCurrentProgress(3)
       return e.getCurrentProgress()
     })
+
+    // Assert
     expect(result).toMatchObject({ lineNumber: 3 })
   })
 
   test('setRuntimeProgress + getRuntimeProgress по статусу — содержит конкретные строки', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует editor
+
+    // Act
     const result = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setRuntimeProgress('complete', [1, 2])
@@ -43,6 +37,8 @@ test.describe('Runtime progress API', () => {
       const errorStr = JSON.stringify(e.getRuntimeProgress('error'))
       return { completeStr, errorStr }
     })
+
+    // Assert
     // ожидаем что в complete найдутся 1 и 2, в error — 4
     expect(result.completeStr).toMatch(/[\[,]1[,\]\}]/)
     expect(result.completeStr).toMatch(/[\[,]2[,\]\}]/)
@@ -50,6 +46,9 @@ test.describe('Runtime progress API', () => {
   })
 
   test('nextRuntimeProgress продвигается по строкам', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует editor
+
+    // Act
     const positions = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setCurrentProgress(1)
@@ -60,12 +59,17 @@ test.describe('Runtime progress API', () => {
       const p3 = e.getCurrentProgress()
       return { p1, p2, p3 }
     })
+
+    // Assert
     expect(positions.p1.lineNumber).toBe(1)
     expect(positions.p2.lineNumber).toBeGreaterThan(positions.p1.lineNumber)
     expect(positions.p3.lineNumber).toBeGreaterThanOrEqual(positions.p2.lineNumber)
   })
 
   test('clearRuntimeProgress сбрасывает и позицию, и статусы строк', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует editor
+
+    // Act
     const result = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setCurrentProgress(2)
@@ -77,12 +81,17 @@ test.describe('Runtime progress API', () => {
         completeAfter
       }
     })
+
+    // Assert
     expect(result.current).toBeFalsy()
     // complete статус должен быть очищен — в результирующей строке не должно быть 1
     expect(result.completeAfter).not.toMatch(/[\[,]1[,\]\}]/)
   })
 
   test('setStackStatus + clearStackStatus вызываются успешно', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует editor
+
+    // Act
     const errors = await page.evaluate(() => {
       const e = (window as any).__editor__
       const errs: string[] = []
@@ -91,10 +100,15 @@ test.describe('Runtime progress API', () => {
       try { e.clearStackStatus() } catch (err: any) { errs.push('clear:' + err.message) }
       return errs
     })
+
+    // Assert
     expect(errors).toEqual([])
   })
 
   test('Codicons: setLineCodicon + getLineCodicon + clearCodicons', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует editor
+
+    // Act
     const result = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setLineCodicon('2', 'codicon-circle-filled')
@@ -110,6 +124,8 @@ test.describe('Runtime progress API', () => {
       }
       return { before, after }
     })
+
+    // Assert
     expect(result.before.line2).toContain('codicon-circle-filled')
     expect(result.before.line3).toContain('codicon-circle-outline')
     expect(result.after.line2).not.toContain('codicon-circle-filled')

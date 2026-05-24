@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
+import { fixtures } from './_helpers'
 
 const f01 = fs.readFileSync(path.join(__dirname, 'syntax/example.01.feature'), 'utf-8')
 const f02 = fs.readFileSync(path.join(__dirname, 'syntax/example.02.feature'), 'utf-8')
 const f03 = fs.readFileSync(path.join(__dirname, 'syntax/example.03.feature'), 'utf-8')
 const f04 = fs.readFileSync(path.join(__dirname, 'syntax/example.04.feature'), 'utf-8')
-const keywords = require('../example/Keywords/keywords.json')
-const steplist = require('../example/StepList/ru.json')
 
 async function setupProvider(page: any) {
   await page.goto('/index.html')
@@ -17,7 +16,7 @@ async function setupProvider(page: any) {
     provider.setKeypairs(JSON.stringify({ if: ['then'], Если: ['Тогда'] }))
     provider.setKeywords(JSON.stringify(keywords))
     provider.setStepList(JSON.stringify(steplist))
-  }, { keywords, steplist })
+  }, { keywords: fixtures.keywords, steplist: fixtures.defaultSteplist })
 }
 
 function range(lineNumber: number) {
@@ -88,42 +87,73 @@ async function decorationsFor(page: any, content: string) {
 
 test.describe('Проверка синтаксиса', () => {
   test.beforeEach(async ({ page }) => {
+    // Arrange + Act (shared)
     await setupProvider(page)
   })
 
   test('Ключевые слова в описании фичи', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const r = await check(page, f01)
+
+    // Assert
     expect(r.markersCount).toBe(1)
     expect(r.values[0]).toBe('Когда есть шаг с ошибкой ситнаксиса')
   })
 
   test('Быстрые исправления: параметры в кавычках', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const r = await check(page, f02)
-    expect(r.markersCount).toBe(4)
     const act = await actionTitles(page, f02, 0)
+
+    // Assert
+    expect(r.markersCount).toBe(4)
     expect(act.count).toBe(7)
     expect(act.titles[0]).toBe("в таблице 'ИмяКнопки' есть колонка с именем \"ИмяКоманды\" Тогда")
   })
 
   test('Быстрые исправления: параметры в угловых скобках', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const act = await actionTitles(page, f02, 1)
+
+    // Assert
     expect(act.titles[0]).toBe('поле с именем <Фамилия> не существует')
   })
 
   test('Быстрые исправления: числовые параметры', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const act = await actionTitles(page, f02, 2)
+
+    // Assert
     expect(act.titles[0]).toBe('в течение 30 секунд я выполняю')
   })
 
   test('Шаги с условными операторами', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const r = await check(page, f03)
+
+    // Assert
     expect(r.markersCount).toBe(2)
     expect(r.values[0]).toBe('Если есть картинка "ИмяКартинки"')
     expect(r.values[1]).toBe('И я нажимаю ENTER Тогда')
   })
 
   test('Декорация групп пиктограммами', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const decorations = await decorationsFor(page, f04)
+
+    // Assert
     expect(decorations).toHaveLength(8)
     expect(decorations[0].range).toEqual(range(16))
     expect(decorations[0].options.glyphMarginClassName).toBe('codicon-triangle-right')
@@ -140,14 +170,24 @@ test.describe('Проверка синтаксиса', () => {
   })
 
   test('Декорация импортируемых подсценариев', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const decorations = await decorationsFor(page, f04)
+
+    // Assert
     expect(decorations[2].range).toEqual({ startLineNumber: 23, startColumn: 2, endLineNumber: 23, endColumn: 74 })
     expect(decorations[2].options.glyphMarginClassName).toBe(null)
     expect(decorations[2].options.inlineClassName).toBe('vanessa-style-underline')
   })
 
   test('Декорация условных операторов и циклов', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const decorations = await decorationsFor(page, f04)
+
+    // Assert
     expect(decorations[4].range).toEqual(range(28))
     expect(decorations[4].options.glyphMarginClassName).toBe('codicon-symbol-class')
     expect(decorations[4].options.inlineClassName).toBe(null)
@@ -160,6 +200,9 @@ test.describe('Проверка синтаксиса', () => {
   })
 
   test('Картинки в тексте сценария', async ({ page }) => {
+    // Arrange (shared) — beforeEach инициализирует provider
+
+    // Act
     const images = await page.evaluate(async ({ content }) => {
       const w = window as any
       const model = w.monaco.editor.createModel(content, 'turbo-gherkin')
@@ -168,6 +211,8 @@ test.describe('Проверка синтаксиса', () => {
         height: img.height, src: img.src, lineNumber: img.lineNumber, column: img.column
       }))
     }, { content: f03 })
+
+    // Assert
     expect(images).toHaveLength(1)
     expect(images[0].height).toBe(10)
     expect(images[0].src).toBe('img/logo.png')
