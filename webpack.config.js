@@ -16,7 +16,9 @@ module.exports = (env, argv) => {
       fallback: {
         util: require.resolve('util/'),
         stream: require.resolve('stream-browserify'),
-        buffer: require.resolve('buffer/')
+        buffer: require.resolve('buffer/'),
+        path: require.resolve('path-browserify'),
+        fs: false
       }
     },
     output: {
@@ -110,6 +112,9 @@ module.exports = (env, argv) => {
       new webpack.NormalModuleReplacementPlugin(/\/(vscode-)?nls\.js$/, function (resource) {
         resource.request = nls
         resource.resource = nls
+      }),
+      new webpack.NormalModuleReplacementPlugin(/^node:/, function (resource) {
+        resource.request = resource.request.replace(/^node:/, '')
       }),
       new webpack.optimize.LimitChunkCountPlugin({
         maxChunks: 3
