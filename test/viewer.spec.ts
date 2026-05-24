@@ -51,6 +51,35 @@ test.describe('VanessaViwer — markdown viewer', () => {
     expect(result.after).toBe(1)
   })
 
+  test('tabs.isMarkdownViwer / isCodeEditor / isDiffEditor отражают активную вкладку', async ({ page }) => {
+    await setupTabs(page)
+    const flagsViewer = await page.evaluate(({ text }) => {
+      const tabs = (window as any).VanessaTabs
+      tabs.view('m.md', 'm.md', 'm.md', text)
+      return {
+        isMarkdownViwer: tabs.isMarkdownViwer,
+        isCodeEditor: tabs.isCodeEditor,
+        isDiffEditor: tabs.isDiffEditor
+      }
+    }, { text: markdownText })
+    expect(flagsViewer.isMarkdownViwer).toBe(true)
+    expect(flagsViewer.isCodeEditor).toBe(false)
+    expect(flagsViewer.isDiffEditor).toBe(false)
+
+    const flagsEditor = await page.evaluate(() => {
+      const tabs = (window as any).VanessaTabs
+      tabs.edit('содержимое', 'e.feature', 'e.feature', 'e', 0, false, true)
+      return {
+        isMarkdownViwer: tabs.isMarkdownViwer,
+        isCodeEditor: tabs.isCodeEditor,
+        isDiffEditor: tabs.isDiffEditor
+      }
+    })
+    expect(flagsEditor.isMarkdownViwer).toBe(false)
+    expect(flagsEditor.isCodeEditor).toBe(true)
+    expect(flagsEditor.isDiffEditor).toBe(false)
+  })
+
   test('view-вкладка закрывается через tabs.closeAll', async ({ page }) => {
     await setupTabs(page)
     const result = await page.evaluate(({ text }) => {
