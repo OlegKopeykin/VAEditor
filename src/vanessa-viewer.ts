@@ -75,7 +75,7 @@ class VanessaViewEditor {
   }
 }
 
-export class VanessaViwer implements IVanessaEditor {
+export class VanessaViwer implements IVanessaEditor, IPublicVanessaViwer {
   domNode(): HTMLElement { return this._domNode; }
   dispose(): void { }
   focus = () => { };

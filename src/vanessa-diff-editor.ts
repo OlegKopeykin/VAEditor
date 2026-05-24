@@ -6,7 +6,7 @@ import { IVanessaEditor, EventsManager, createModel, VanessaEditorEvent, dispose
 import { VanessaEditor } from "./vanessa-editor";
 import { VanessaTabs } from "./vanessa-tabs";
 
-export class VanessaDiffEditor implements IVanessaEditor {
+export class VanessaDiffEditor implements IVanessaEditor, IPublicVanessaDiffEditor {
 
   static editors: Array<VanessaDiffEditor> = [];
   private static standaloneInstance: VanessaDiffEditor;

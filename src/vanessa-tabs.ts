@@ -284,7 +284,7 @@ class VanessaTabItem {
   }
 }
 
-export class VanessaTabs {
+export class VanessaTabs implements IPublicVanessaTabs {
 
   private static standaloneInstance: VanessaTabs;
   public domContainer: HTMLElement;

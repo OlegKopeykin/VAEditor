@@ -56,7 +56,7 @@ export function clearWorkerCache(uri: monaco.Uri) {
   worker.postMessage({ type: MessageType.DeleteModel, uri: uri.toString() });
 }
 
-export class VanessaGherkinProvider {
+export class VanessaGherkinProvider implements IPublicVanessaGherkinProvider {
 
   public static get instance(): VanessaGherkinProvider { return window["VanessaGherkinProvider"]; }
   public get directives(): ISpprDirect { return this._directives; }

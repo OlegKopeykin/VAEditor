@@ -12,7 +12,7 @@ import * as dom from 'monaco-editor/esm/vs/base/browser/dom';
 
 const $ = dom.$;
 
-export class VanessaEditor implements IVanessaEditor {
+export class VanessaEditor implements IVanessaEditor, IPublicVanessaEditor {
 
   // 1C:Enterprise interaction call.
   public setTheme = (arg: string) => StyleManager.theme = arg;
