@@ -6,16 +6,16 @@ self.MonacoEnvironment = {
     {
       case 'css':
         // tslint:disable-next-line: max-line-length
-        return require("blob-url-loader?type=application/javascript!compile-loader?target=worker&emit=false!monaco-editor/esm/vs/language/css/css.worker");
+        return require("blob-url-loader!compile-loader!monaco-editor/esm/vs/language/css/css.worker");
       case 'json':
         // tslint:disable-next-line: max-line-length
-        return require("blob-url-loader?type=application/javascript!compile-loader?target=worker&emit=false!monaco-editor/esm/vs/language/json/json.worker");
+        return require("blob-url-loader!compile-loader!monaco-editor/esm/vs/language/json/json.worker");
       case 'html':
         // tslint:disable-next-line: max-line-length
-        return require("blob-url-loader?type=application/javascript!compile-loader?target=worker&emit=false!monaco-editor/esm/vs/language/html/html.worker");
+        return require("blob-url-loader!compile-loader!monaco-editor/esm/vs/language/html/html.worker");
       default:
         // tslint:disable-next-line: max-line-length
-        return require("blob-url-loader?type=application/javascript!compile-loader?target=worker&emit=false!monaco-editor/esm/vs/editor/editor.worker");
+        return require("blob-url-loader!compile-loader!monaco-editor/esm/vs/editor/editor.worker");
       }
   }
 };

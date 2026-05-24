@@ -10,7 +10,7 @@ import { KeywordMatcher } from './matcher';
 import { ActionManager } from '../../actions';
 import { VACodeError, VAQuickAction } from './quickfix';
 
-const blob = require("blob-url-loader?type=application/javascript!compile-loader?target=worker&emit=false!/src/languages/turbo-gherkin/worker.js");
+const blob = require("blob-url-loader!compile-loader!/src/languages/turbo-gherkin/worker.js");
 const worker = new Worker(blob);
 let workerMessageId = 0;
 const messageMap = new Map<number, any>();
