@@ -4,22 +4,10 @@ const webpack = require('webpack')
 const nls = require.resolve('monaco-editor-nls')
 
 module.exports = (env, argv) => {
-  const vanessaMode = (env && env.test) ? 'test' : (env && env.demo) ? 'demo' : 'normal'
-
   return {
-    entry: {
-      app: './src/main',
-      test: './test/autotest.js'
-    },
+    entry: { app: './src/main' },
     resolve: {
-      extensions: ['.ts', '.js', '.css'],
-      fallback: {
-        util: require.resolve('util/'),
-        stream: require.resolve('stream-browserify'),
-        buffer: require.resolve('buffer/'),
-        path: require.resolve('path-browserify'),
-        fs: false
-      }
+      extensions: ['.ts', '.js', '.css']
     },
     output: {
       globalObject: 'self',
@@ -96,36 +84,20 @@ module.exports = (env, argv) => {
         }]
     },
     plugins: [
-      new webpack.DefinePlugin({
-        'process.env.VANESSA_MODE': JSON.stringify(vanessaMode)
-      }),
-      new webpack.ProvidePlugin({
-        Buffer: ['buffer', 'Buffer'],
-        process: 'process/browser'
-      }),
       new webpack.NormalModuleReplacementPlugin(/\/(vscode-)?nls\.js$/, function (resource) {
         resource.request = nls
         resource.resource = nls
       }),
-      new webpack.NormalModuleReplacementPlugin(/^node:/, function (resource) {
-        resource.request = resource.request.replace(/^node:/, '')
-      }),
       new webpack.optimize.LimitChunkCountPlugin({
-        maxChunks: 3
+        maxChunks: 2
       }),
       new HtmlWebpackPlugin({
         filename: 'index.html',
         title: 'VAEditor',
         cache: false,
-        chunks:['app'],
+        chunks: ['app'],
         template: path.resolve(__dirname, 'template.html')
-      }),
-      new HtmlWebpackPlugin({
-        filename: 'test.html',
-        title: 'VAEditor',
-        cache: false,
-        template: path.resolve(__dirname, 'template.html')
-      }),
+      })
     ],
     optimization: {
       minimize: argv.mode === 'production'

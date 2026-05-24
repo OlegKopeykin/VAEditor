@@ -5,3 +5,4 @@ fileversion
 Template.bin
 /debug.log
 example/success.txt
+test-results/
