@@ -32,7 +32,8 @@ module.exports = (env, argv) => {
       alias: {
         'blob-url-loader': require.resolve('./tools/loaders/blobUrl'),
         'compile-loader': require.resolve('./tools/loaders/compile'),
-        'monaco-nls': require.resolve('./tools/loaders/monacoNls')
+        'monaco-nls': require.resolve('./tools/loaders/monacoNls'),
+        'replace-strings': require.resolve('./tools/loaders/replaceStrings')
       }
     },
     module: {
@@ -45,20 +46,19 @@ module.exports = (env, argv) => {
       rules: [
         {
           test: /node_modules[\\/]monaco-editor-nls[\\/].+\.js$/,
-          loader: 'string-replace-loader',
+          loader: 'replace-strings',
           options: {
-            multiple: [{
-              search: 'let CURRENT_LOCALE_DATA = null;',
-              replace: 'var CURRENT_LOCALE_DATA = null;'
-            }]
+            replacements: [
+              { search: 'let CURRENT_LOCALE_DATA = null;', replace: 'var CURRENT_LOCALE_DATA = null;' }
+            ]
           }
         },
         {
-          // Объединяет 2 патча monaco для совместимости с 1С runtime
+          // Патчи monaco под совместимость с 1С runtime
           test: /node_modules[\\/]monaco-editor[\\/]esm[\\/].+\.js$/,
-          loader: 'string-replace-loader',
+          loader: 'replace-strings',
           options: {
-            multiple: [
+            replacements: [
               { search: 'let __insane_func;', replace: 'var __insane_func;' },
               { search: 'secondary: [2048 /* CtrlCmd */ | 39 /* KeyI */],', replace: 'secondary: null,' }
             ]
