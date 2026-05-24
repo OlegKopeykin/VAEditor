@@ -4,13 +4,13 @@ const webpack = require('webpack')
 const nls = require.resolve('monaco-editor-nls')
 
 module.exports = (env, argv) => {
-  const entry = {
-    app: './src/main',
-    test: './test/autotest.js'
-  }
+  const vanessaMode = (env && env.test) ? 'test' : (env && env.demo) ? 'demo' : 'normal'
 
   return {
-    entry,
+    entry: {
+      app: './src/main',
+      test: './test/autotest.js'
+    },
     resolve: {
       extensions: ['.ts', '.js', '.css'],
       fallback: {
@@ -54,23 +54,14 @@ module.exports = (env, argv) => {
           }
         },
         {
+          // Объединяет 2 патча monaco для совместимости с 1С runtime
           test: /node_modules[\\/]monaco-editor[\\/]esm[\\/].+\.js$/,
           loader: 'string-replace-loader',
           options: {
-            multiple: [{
-              search: 'let __insane_func;',
-              replace: 'var __insane_func;'
-            }]
-          }
-        },
-        {
-          test: /node_modules[\\/]monaco-editor[\\/]esm[\\/].+\.js$/,
-          loader: 'string-replace-loader',
-          options: {
-            multiple: [{
-              search: 'secondary: [2048 /* CtrlCmd */ | 39 /* KeyI */],',
-              replace: 'secondary: null,'
-            }]
+            multiple: [
+              { search: 'let __insane_func;', replace: 'var __insane_func;' },
+              { search: 'secondary: [2048 /* CtrlCmd */ | 39 /* KeyI */],', replace: 'secondary: null,' }
+            ]
           }
         },
         {
@@ -102,8 +93,7 @@ module.exports = (env, argv) => {
     },
     plugins: [
       new webpack.DefinePlugin({
-        'process.env': JSON.stringify(process.env),
-        'process.argv': JSON.stringify(argv)
+        'process.env.VANESSA_MODE': JSON.stringify(vanessaMode)
       }),
       new webpack.ProvidePlugin({
         Buffer: ['buffer', 'Buffer'],

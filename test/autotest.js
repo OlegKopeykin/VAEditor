@@ -65,9 +65,9 @@ const parseQueryString = function () {
 
 const params = parseQueryString()
 Object.keys(params).forEach(key => params[key] = true)
-if (params.grep || process.argv.env.test) {
+if (params.grep || process.env.VANESSA_MODE === 'test') {
   window.onload = () => autotest()
-} else if (params.demo || (process.argv.env.demo)) {
+} else if (params.demo || process.env.VANESSA_MODE === 'demo') {
   window.onload = () => demo.show()
 } else {
   window.VanessaAutotest = autotest
