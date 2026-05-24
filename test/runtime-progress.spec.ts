@@ -34,19 +34,19 @@ test.describe('Runtime progress API', () => {
     expect(result).toMatchObject({ lineNumber: 3 })
   })
 
-  test('setRuntimeProgress + getRuntimeProgress по статусу', async ({ page }) => {
+  test('setRuntimeProgress + getRuntimeProgress по статусу — содержит конкретные строки', async ({ page }) => {
     const result = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setRuntimeProgress('complete', [1, 2])
       e.setRuntimeProgress('error', [4])
-      return {
-        complete: e.getRuntimeProgress('complete'),
-        error: e.getRuntimeProgress('error'),
-        pending: e.getRuntimeProgress('pending')
-      }
+      const completeStr = JSON.stringify(e.getRuntimeProgress('complete'))
+      const errorStr = JSON.stringify(e.getRuntimeProgress('error'))
+      return { completeStr, errorStr }
     })
-    expect(result.complete).toBeTruthy()
-    expect(result.error).toBeTruthy()
+    // ожидаем что в complete найдутся 1 и 2, в error — 4
+    expect(result.completeStr).toMatch(/[\[,]1[,\]\}]/)
+    expect(result.completeStr).toMatch(/[\[,]2[,\]\}]/)
+    expect(result.errorStr).toMatch(/[\[,]4[,\]\}]/)
   })
 
   test('nextRuntimeProgress продвигается по строкам', async ({ page }) => {
@@ -65,28 +65,33 @@ test.describe('Runtime progress API', () => {
     expect(positions.p3.lineNumber).toBeGreaterThanOrEqual(positions.p2.lineNumber)
   })
 
-  test('clearRuntimeProgress сбрасывает позицию', async ({ page }) => {
+  test('clearRuntimeProgress сбрасывает и позицию, и статусы строк', async ({ page }) => {
     const result = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setCurrentProgress(2)
       e.setRuntimeProgress('complete', [1])
       e.clearRuntimeProgress()
+      const completeAfter = JSON.stringify(e.getRuntimeProgress('complete'))
       return {
         current: e.getCurrentProgress(),
-        complete: e.getRuntimeProgress('complete')
+        completeAfter
       }
     })
     expect(result.current).toBeFalsy()
+    // complete статус должен быть очищен — в результирующей строке не должно быть 1
+    expect(result.completeAfter).not.toMatch(/[\[,]1[,\]\}]/)
   })
 
-  test('setStackStatus + clearStackStatus не падают', async ({ page }) => {
-    await page.evaluate(() => {
+  test('setStackStatus + clearStackStatus вызываются успешно', async ({ page }) => {
+    const errors = await page.evaluate(() => {
       const e = (window as any).__editor__
-      e.setStackStatus(true, 2)
-      e.setStackStatus(true, 4)
-      e.clearStackStatus()
+      const errs: string[] = []
+      try { e.setStackStatus(true, 2) } catch (err: any) { errs.push('set2:' + err.message) }
+      try { e.setStackStatus(true, 4) } catch (err: any) { errs.push('set4:' + err.message) }
+      try { e.clearStackStatus() } catch (err: any) { errs.push('clear:' + err.message) }
+      return errs
     })
-    // smoke — API стабильно отрабатывает
+    expect(errors).toEqual([])
   })
 
   test('Codicons: setLineCodicon + getLineCodicon + clearCodicons', async ({ page }) => {

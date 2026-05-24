@@ -47,4 +47,47 @@ test.describe('Public API — window surface', () => {
       expect(kind, `${name} должен быть функцией`).toBe('function')
     }
   })
+
+  test('VanessaEditor (после createVanessaEditor) имеет ключевые методы IPublicVanessaEditor', async ({ page }) => {
+    await page.goto('/index.html')
+    await page.waitForFunction(() => (window as any).createVanessaEditor !== undefined)
+    const methods = await page.evaluate(() => {
+      const editor = (window as any).createVanessaEditor('пример', 'turbo-gherkin')
+      const required = [
+        'getContent', 'setContent', 'getLineContent',
+        'getSelection', 'setSelection', 'getSelectedContent',
+        'getPosition', 'setPosition', 'insertText',
+        'getBreakpoints', 'setBreakpoints', 'toggleBreakpoint',
+        'setRuntimeProgress', 'getCurrentProgress', 'nextRuntimeProgress', 'clearRuntimeProgress',
+        'showRuntimeError', 'showRuntimeCode', 'clearRuntimeErrors', 'clearRuntimeCodes',
+        'setLineCodicon', 'getLineCodicon', 'clearCodicons',
+        'setReadOnly', 'setTheme', 'revealLine', 'fireEvent', 'showMessage'
+      ]
+      const result: Record<string, string> = {}
+      for (const m of required) result[m] = typeof (editor as any)[m]
+      return result
+    })
+    for (const [name, kind] of Object.entries(methods)) {
+      expect(kind, `editor.${name} должен быть функцией`).toBe('function')
+    }
+  })
+
+  test('VanessaTabs (после createVanessaTabs) имеет ключевые методы IPublicVanessaTabs', async ({ page }) => {
+    await page.goto('/index.html')
+    await page.waitForFunction(() => (window as any).createVanessaTabs !== undefined)
+    const methods = await page.evaluate(() => {
+      const tabs = (window as any).createVanessaTabs()
+      const required = [
+        'edit', 'diff', 'view', 'welcome', 'find',
+        'closeAll', 'close', 'count', 'showContextMenu',
+        'previousDiff', 'nextDiff', 'canNavigateDiff'
+      ]
+      const result: Record<string, string> = {}
+      for (const m of required) result[m] = typeof (tabs as any)[m]
+      return result
+    })
+    for (const [name, kind] of Object.entries(methods)) {
+      expect(kind, `tabs.${name} должен быть функцией`).toBe('function')
+    }
+  })
 })

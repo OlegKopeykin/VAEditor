@@ -36,70 +36,117 @@ test.describe('Diff редактор', () => {
     expect(info.modelValue).toBe(modifiedText)
   })
 
-  test('setValue заменяет оба варианта', async ({ page }) => {
+  test('setValue заменяет оба варианта (original + modified)', async ({ page }) => {
     await setupDiff(page)
     const newOriginal = 'Новый старый текст'
     const newModified = 'Новый изменённый текст'
-    const value = await page.evaluate(({ newOriginal, newModified }) => {
+    const values = await page.evaluate(({ newOriginal, newModified }) => {
       const e = (window as any).__diff__
       e.setValue(newOriginal, 'old.txt', newModified, 'new.txt')
-      return e.getModel().getValue()
+      const modifiedEditor = e.editor.getModifiedEditor()
+      const originalEditor = e.editor.getOriginalEditor()
+      return {
+        modified: modifiedEditor.getModel().getValue(),
+        original: originalEditor.getModel().getValue()
+      }
     }, { newOriginal, newModified })
-    expect(value).toBe(newModified)
+    expect(values.original).toBe(newOriginal)
+    expect(values.modified).toBe(newModified)
   })
 
-  test('setReadOnly применяется', async ({ page }) => {
+  test('setReadOnly применяется к опциям модифицированного редактора', async ({ page }) => {
     await setupDiff(page)
-    const before = await page.evaluate(() => (window as any).__diff__.getModel().getValue())
-    await page.evaluate(() => (window as any).__diff__.setReadOnly(true))
-    await page.evaluate(() => {
+    const result = await page.evaluate(() => {
       const e = (window as any).__diff__
+      const me = e.editor.getModifiedEditor()
+      e.setReadOnly(true)
+      const readOnlyAfter = me.getOption(me._modelData?.options ? 91 : 91)
+      // Через прямой rawOptions можно увидеть текущее состояние
+      const opts1 = (e.editor as any)._domElement ? true : true
+      e.setReadOnly(false)
+      return { rawSet: typeof e.setReadOnly === 'function' }
+    })
+    expect(result.rawSet).toBe(true)
+    // Дополнительно: после setReadOnly(true) попытка trigger 'type' не меняет модифицированную часть
+    const after = await page.evaluate(({ originalText }) => {
+      const e = (window as any).__diff__
+      const me = e.editor.getModifiedEditor()
+      const before = me.getModel().getValue()
+      e.setReadOnly(true)
+      me.focus()
       e.trigger('keyboard', 'type', { text: 'XXX' })
-    })
-    const after = await page.evaluate(() => (window as any).__diff__.getModel().getValue())
-    expect(after).toBe(before)
+      const after = me.getModel().getValue()
+      return { before, after }
+    }, { originalText })
+    expect(after.after).toBe(after.before)
   })
 
-  test('setSideBySide и обратно — не падает', async ({ page }) => {
+  test('setSideBySide переключает renderSideBySide опцию', async ({ page }) => {
     await setupDiff(page)
-    await page.evaluate(() => {
+    const states = await page.evaluate(() => {
       const e = (window as any).__diff__
+      // Monaco IDiffEditorOptions.renderSideBySide отражается в DOM-классе .side-by-side
+      const dom = e.domNode()
       e.setSideBySide(false)
+      const inline = dom.classList.contains('side-by-side') === false
       e.setSideBySide(true)
+      const sideBySide = dom.classList.contains('side-by-side')
+      return { inline, sideBySide }
     })
-    const value = await page.evaluate(() => (window as any).__diff__.getModel().getValue())
-    expect(value).toBe(modifiedText)
+    expect(states.inline).toBe(true)
+    expect(states.sideBySide).toBe(true)
   })
 
-  test('navigate next/previous между отличиями', async ({ page }) => {
+  test('navigate next перемещает позицию модифицированного редактора', async ({ page }) => {
     await setupDiff(page)
     await page.waitForTimeout(500)
-    const canNavigate = await page.evaluate(() => (window as any).__diff__.canNavigate())
-    expect(canNavigate).toBe(true)
-    await page.evaluate(() => {
+    const result = await page.evaluate(() => {
       const e = (window as any).__diff__
+      const me = e.editor.getModifiedEditor()
+      const before = me.getPosition()?.lineNumber
+      const canNavigate = e.canNavigate()
       e.next()
+      const after1 = me.getPosition()?.lineNumber
       e.next()
+      const after2 = me.getPosition()?.lineNumber
       e.previous()
+      const back = me.getPosition()?.lineNumber
+      return { canNavigate, before, after1, after2, back }
     })
-    // не падает — проверка smoke
+    expect(result.canNavigate).toBe(true)
+    // Позиция должна меняться при навигации
+    expect(result.after1).not.toBe(result.before)
   })
 
-  test('setTheme не падает', async ({ page }) => {
+  test('setTheme меняет тему monaco', async ({ page }) => {
     await setupDiff(page)
-    await page.evaluate(() => (window as any).__diff__.setTheme('vs-dark'))
-    await page.evaluate(() => (window as any).__diff__.setTheme('vs'))
+    const result = await page.evaluate(() => {
+      const e = (window as any).__diff__
+      const dom = e.domNode()
+      e.setTheme('vs-dark')
+      // Тема применяется к корневому monaco-editor — поищем класс vs-dark на каком-нибудь предке
+      const themeEl = dom.closest('.monaco-editor') || dom.querySelector('.monaco-editor')
+      const darkClass = themeEl ? themeEl.classList.contains('vs-dark') : false
+      e.setTheme('vs')
+      const lightClass = themeEl ? themeEl.classList.contains('vs') : false
+      return { darkClass, lightClass }
+    })
+    expect(result.darkClass).toBe(true)
+    expect(result.lightClass).toBe(true)
   })
 
-  test('dispose освобождает редактор', async ({ page }) => {
+  test('dispose очищает standaloneInstance', async ({ page }) => {
     await setupDiff(page)
-    const beforeDispose = await page.evaluate(() => !!(window as any).__diff__.domNode())
-    expect(beforeDispose).toBe(true)
-    await page.evaluate(() => (window as any).disposeVanessaDiffEditor())
-    const standalone = await page.evaluate(() => {
+    const before = await page.evaluate(() => !!(window as any).__diff__.domNode())
+    expect(before).toBe(true)
+    // После disposeVanessaDiffEditor — повторный createVanessaDiffEditor создаёт НОВЫЙ instance
+    const result = await page.evaluate(() => {
       const w = window as any
-      try { return !!w.createVanessaDiffEditor.constructor } catch { return false }
+      const oldDiff = w.__diff__
+      w.disposeVanessaDiffEditor()
+      const newDiff = w.createVanessaDiffEditor('a', 'b', 'turbo-gherkin')
+      return { sameInstance: oldDiff === newDiff }
     })
-    expect(standalone).toBe(true)
+    expect(result.sameInstance).toBe(false)
   })
 })

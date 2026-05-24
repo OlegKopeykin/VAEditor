@@ -53,7 +53,7 @@ test.describe('Breakpoints API', () => {
     expect(result[0]).toMatchObject({ lineNumber: 2, enable: true })
   })
 
-  test('toggleBreakpoint добавляет на пустой строке', async ({ page }) => {
+  test('toggleBreakpoint добавляет breakpoint с enable=true', async ({ page }) => {
     const result = await page.evaluate(() => {
       const e = (window as any).__editor__
       e.setBreakpoints(JSON.stringify([]))
@@ -61,7 +61,8 @@ test.describe('Breakpoints API', () => {
       return JSON.parse(e.getBreakpoints())
     })
     expect(result).toHaveLength(1)
-    expect(result[0]).toMatchObject({ lineNumber: 2 })
+    expect(result[0]).toMatchObject({ lineNumber: 2, enable: true })
+    expect(typeof result[0].codeWidget).toBe('string')
   })
 
   test('setBreakpoints с пустым массивом очищает все', async ({ page }) => {
