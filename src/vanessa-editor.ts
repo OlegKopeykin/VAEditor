@@ -1,3 +1,4 @@
+/// <reference path="./types/public-api.d.ts" />
 import { IVanessaEditor, EventsManager, createModel, VanessaEditorEvent, disposeModel, VAEditorType } from "./common";
 import { language as gherkin } from './languages/turbo-gherkin/configuration'
 import { ActionManager } from "./actions";
@@ -12,7 +13,7 @@ import * as dom from 'monaco-editor/esm/vs/base/browser/dom';
 
 const $ = dom.$;
 
-export class VanessaEditor implements IVanessaEditor {
+export class VanessaEditor implements IVanessaEditor, IPublicVanessaEditor {
 
   // 1C:Enterprise interaction call.
   public setTheme = (arg: string) => StyleManager.theme = arg;

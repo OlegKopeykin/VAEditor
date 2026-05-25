@@ -1,3 +1,4 @@
+/// <reference path="./types/public-api.d.ts" />
 import * as monaco from "monaco-editor"
 import * as dom from 'monaco-editor/esm/vs/base/browser/dom';
 import { renderMarkdown } from 'monaco-editor/esm/vs/base/browser/markdownRenderer.js';
@@ -75,7 +76,7 @@ class VanessaViewEditor {
   }
 }
 
-export class VanessaViwer implements IVanessaEditor {
+export class VanessaViwer implements IVanessaEditor, IPublicVanessaViwer {
   domNode(): HTMLElement { return this._domNode; }
   dispose(): void { }
   focus = () => { };

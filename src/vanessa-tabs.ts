@@ -1,3 +1,4 @@
+/// <reference path="./types/public-api.d.ts" />
 import * as dom from 'monaco-editor/esm/vs/base/browser/dom';
 import { ActionManager } from './actions';
 import { VanessaEditor } from "./vanessa-editor";
@@ -284,7 +285,7 @@ class VanessaTabItem {
   }
 }
 
-export class VanessaTabs {
+export class VanessaTabs implements IPublicVanessaTabs {
 
   private static standaloneInstance: VanessaTabs;
   public domContainer: HTMLElement;

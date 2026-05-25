@@ -1,3 +1,4 @@
+/// <reference path="../../types/public-api.d.ts" />
 import { createTokenizationSupport } from 'monaco-editor/esm/vs/editor/standalone/common/monarch/monarchLexer';
 import { StaticServices } from 'monaco-editor/esm/vs/editor/standalone/browser/standaloneServices';
 import { TokenizationRegistry, ITokenizationSupport } from 'monaco-editor/esm/vs/editor/common/modes';
@@ -56,7 +57,7 @@ export function clearWorkerCache(uri: monaco.Uri) {
   worker.postMessage({ type: MessageType.DeleteModel, uri: uri.toString() });
 }
 
-export class VanessaGherkinProvider {
+export class VanessaGherkinProvider implements IPublicVanessaGherkinProvider {
 
   public static get instance(): VanessaGherkinProvider { return window["VanessaGherkinProvider"]; }
   public get directives(): ISpprDirect { return this._directives; }
