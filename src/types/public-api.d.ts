@@ -290,7 +290,7 @@ declare global {
 
     /** Вставить текст в позицию курсора. */
     insertText(text: string, arg?: string): void;
-    /** Нормализовать отступы. */
+    /** Нормализовать отступы всех строк по `insertSpaces`/`tabSize` модели. Undo-история сохраняется. */
     normalizeIndentation(): void;
     /** Прогнать проверку синтаксиса. */
     checkSyntax(): void;

@@ -72,7 +72,26 @@ export class VanessaEditor implements IVanessaEditor {
   public setTabSize = (arg: number) => this.editor.getModel().updateOptions({ tabSize: arg });
   public setInsertSpaces = (arg: boolean) => this.editor.getModel().updateOptions({ insertSpaces: arg });
   public setDetectIndentation = (arg: boolean) => this.editor.updateOptions({ detectIndentation: arg });
-  public normalizeIndentation = () => this.syntaxManager?.normalizeIndentation();
+  public normalizeIndentation = () => {
+    const model = this.editor.getModel();
+    const edits: monaco.editor.IIdentifiedSingleEditOperation[] = [];
+    const lineCount = model.getLineCount();
+    for (let lineNumber = 1; lineNumber <= lineCount; lineNumber++) {
+      const line = model.getLineContent(lineNumber);
+      const match = line.match(/^[ \t]+/);
+      if (!match) continue;
+      const indent = match[0];
+      const normalized = model.normalizeIndentation(indent);
+      if (normalized !== indent) edits.push({
+        range: new monaco.Range(lineNumber, 1, lineNumber, indent.length + 1),
+        text: normalized,
+      });
+    }
+    if (edits.length === 0) return;
+    model.pushStackElement();
+    model.pushEditOperations([], edits, () => null);
+    model.pushStackElement();
+  }
 
   public checkSyntax = () => { if (this.syntaxManager) this.syntaxManager.checkSyntax(); }
   public get enableSyntaxCheck(): boolean { return this.syntaxManager !== null; }

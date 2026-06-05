@@ -35,15 +35,6 @@ export class SyntaxManager {
       , 1000);
   }
 
-  public normalizeIndentation() {
-    const model = this.editor.getModel();
-    const lines = model.getLinesContent();
-    const value = lines.map(line =>
-      model.normalizeIndentation(line)
-    ).join(model.getEOL());
-    model.setValue(value);
-  }
-
   private imageViewZoneIds: Array<string> = [];
 
   private addImage(image: VAImage) {
